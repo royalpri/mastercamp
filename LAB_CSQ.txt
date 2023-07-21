@@ -279,5 +279,4 @@ set routing-instances To_DNSW instance-type virtual-router
 set routing-instances To_DNSW routing-options rib To_DNSW.inet6.0 static route ::/0 next-hop 2001:e60:e650:5104:10:59:150:42
 set vlans default vlan-id 1
 
-{master:0}[edit]
-root@TEST_CSQ# 
+commit
