@@ -1,7 +1,9 @@
 
-set version 17.3R3-S2.2
+
 set system host-name TEST_CSQ
-set system root-authentication encrypted-password "$6$yoQcTuHX$iFuuctVwHMxC0m/2b8S43EBr4SoE64yOr2GxbokkiYrZay8QmdWmMub20kXQe2vIlSGf5A7yo6kxzdSuhqZUo0"
+set system root-authentication plain-text-password 
+new1234!
+new1234!
 set system syslog user * any emergency
 set system syslog file messages any notice
 set system syslog file messages authorization info
