@@ -1,0 +1,489 @@
+config terminal
+
+
+
+hostname LAB-MCN
+clock timezone KST 9
+banner motd x
+==========================================================================
+                              !!!!! WARNING !!!!!                            
+             Only authorized personnel can access this system.
+        The unauthorized access will be subject to a legal penalty.
+                              !!!!! WARNING !!!!!
+==========================================================================
+x
+interface Loopback0
+ description ## Router-ID ##
+ ipv4 address 175.254.0.13 255.255.255.255
+ ipv6 address 2400:800:500:0:175:254:0:13/128
+!
+interface MgmtEth0/0/CPU0/0
+ shutdown
+!
+interface GigabitEthernet0/0/0/0
+ ipv4 address 10.59.1.2 255.255.255.252
+ ipv4 unreachables disable
+ ipv6 address 2001:e60:e650:5105:10:59:1:2/126
+ ipv6 unreachables disable
+ load-interval 30
+ no shutdown
+!
+interface GigabitEthernet0/0/0/1
+ description ## LAB-B2B-CORE ##
+ ipv4 address 192.168.11.2 255.255.255.252
+ ipv4 unreachables disable
+ load-interval 30
+ no shutdown
+!
+interface GigabitEthernet0/0/0/2
+ description ## skt eth0/2 ##
+ ipv4 address 223.62.157.134 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/0/0/3
+ shutdown
+!
+interface GigabitEthernet0/0/0/4
+ description ## LAB-CSQ ##
+ mtu 4484
+ ipv4 address 175.254.51.1 255.255.255.252
+ ipv4 unreachables disable
+ ipv6 address 2400:800:500:0:175:254:51:1/126
+ ipv6 unreachables disable
+ load-interval 30
+ no shutdown
+!
+interface GigabitEthernet0/0/0/5
+ shutdown
+!
+interface GigabitEthernet0/0/0/6
+ description ## LAB-CSQ ##
+ mtu 4484
+ ipv4 address 175.254.61.1 255.255.255.252
+ ipv4 unreachables disable
+ ipv6 address 2400:800:500:0:175:254:61:1/126
+ ipv6 unreachables disable
+ load-interval 30
+ no shutdown
+!
+interface GigabitEthernet0/0/0/7
+ shutdown
+!
+interface GigabitEthernet0/0/0/8
+ shutdown
+!
+prefix-set KT-DU-Local
+  18.96.0.0/12,
+  175.218.128.0/19
+end-set
+!
+prefix-set SK-DU-Local
+  38.156.0.0/14,
+  38.228.0.0/16,
+  38.172.0.0/14,
+  38.232.0.0/16,
+  48.192.0.0/13,
+  48.200.0.0/13
+end-set
+!
+prefix-set KT-CORE-Local
+  39.18.128.0/19,
+  39.18.226.0/23,
+  39.18.236.0/23,
+  39.18.238.0/24,
+  39.19.128.0/19,
+  39.19.230.0/23
+end-set
+!
+prefix-set LG-CORE-Local
+  106.98.128.0/24,
+  106.98.1.0/24,
+  33.0.1.0/24
+end-set
+!
+prefix-set SK-CORE-Local
+  38.27.9.0/24,
+  48.0.0.0/22,
+  48.128.32.128/25,
+  48.128.32.0/20,
+  48.131.32.0/24,
+  48.131.33.0/24,
+  48.0.48.0/24,
+  48.0.49.0/24,
+  48.253.209.0/25,
+  48.253.209.128/25
+end-set
+!
+route-policy Deny-BGP
+  drop
+end-policy
+!
+route-policy Static-BGP
+  if tag is 3011 then
+    set community (9964:3011, 9964:9611)
+    set origin igp
+  elseif tag is 3021 then
+    set community (9964:3021, 9964:9611)
+    set origin igp
+  elseif tag is 5000 then
+    set community (9964:5000)
+    set origin igp
+  elseif tag is 5001 then
+    set community (9964:5001)
+    set origin igp
+  elseif tag is 5009 then
+    set community (9964:5009)
+    set origin igp
+  elseif tag is 100 then
+    set community (9964:100)
+    set origin igp
+  else
+    drop
+  endif
+end-policy
+!
+route-policy LG-Local-In
+  if destination in LG-CORE-Local then
+    set community (9964:3211, 9964:9611)
+  else
+    drop
+  endif
+end-policy
+!
+route-policy SK-Local-In
+  if destination in SK-CORE-Local then
+    set community (9964:3111, 9964:9611)
+  elseif destination in SK-DU-Local then
+    set community (9964:3121, 9964:9611)
+  else
+    drop
+  endif
+end-policy
+!
+route-policy Static-ISIS
+  if tag is 10000 then
+    pass
+  else
+    drop
+  endif
+end-policy
+!
+route-policy KT-Local-Out
+  if community matches-every (9964:3011, 9964:9611) and destination in KT-CORE-Local then
+    pass
+  elseif community matches-every (9964:3021, 9964:9611) and destination in KT-DU-Local then
+    pass
+  else
+    drop
+  endif
+end-policy
+!
+route-policy Deny-BGP-IPv6
+  drop
+end-policy
+!
+router static
+ address-family ipv4 unicast
+  0.0.0.0/0 175.254.0.219
+  10.0.232.0/24 Null0 tag 5000
+  10.8.0.0/16 Null0 tag 5000
+  10.16.32.0/20 Null0 tag 5000
+  10.16.32.0/21 Null0 tag 5001
+  10.16.40.0/21 Null0 tag 5001
+  10.20.0.0/17 Null0 tag 5000
+  10.45.68.0/23 Null0 tag 5000
+  10.45.80.0/22 Null0 tag 5000
+  10.45.92.0/22 Null0 tag 5000
+  10.59.0.0/16 Null0 tag 5000
+  10.108.0.0/16 Null0 tag 5000
+  10.109.0.0/16 Null0 tag 5000
+  10.124.0.0/16 Null0 tag 5000
+  10.189.0.0/16 Null0 tag 5000
+  18.0.0.0/8 Null0 tag 5000
+  18.0.0.0/9 Null0 tag 5001
+  18.96.0.0/12 Null0 tag 3021
+  18.128.0.0/9 Null0 tag 5001
+  39.7.48.0/23 Null0 tag 5000
+  39.18.0.0/16 Null0 tag 5000
+  39.18.0.0/17 Null0 tag 5001
+  39.18.128.0/17 Null0 tag 5001
+  39.18.128.0/19 Null0 tag 3011
+  39.18.226.0/23 Null0 tag 3011
+  39.18.236.0/23 Null0 tag 3011
+  39.18.238.0/24 Null0 tag 3011
+  39.19.0.0/16 Null0 tag 5000
+  39.19.128.0/19 Null0 tag 3011
+  39.19.230.0/23 Null0 tag 3011
+  39.24.0.0/13 Null0 tag 5000
+  49.56.0.0/13 Null0 tag 5000
+  100.64.0.0/10 Null0 tag 5000
+  100.64.0.0/11 Null0 tag 5001
+  100.96.0.0/11 Null0 tag 5001
+  100.100.100.1/32 Null0 tag 100
+  100.100.100.2/32 Null0 tag 100
+  100.100.100.3/32 Null0 tag 100
+  100.100.100.4/32 Null0 tag 100
+  100.100.100.5/32 Null0 tag 100
+  100.100.100.6/32 Null0 tag 100
+  100.100.100.7/32 Null0 tag 100
+  100.100.100.8/32 Null0 tag 100
+  100.100.100.9/32 Null0 tag 100
+  100.100.100.10/32 Null0 tag 100
+  100.100.100.11/32 Null0 tag 100
+  100.100.100.12/32 Null0 tag 100
+  100.100.100.13/32 Null0 tag 100
+  100.100.100.14/32 Null0 tag 100
+  100.100.100.15/32 Null0 tag 100
+  100.100.100.16/32 Null0 tag 100
+  100.100.100.17/32 Null0 tag 100
+  100.100.100.18/32 Null0 tag 100
+  100.100.100.19/32 Null0 tag 100
+  100.100.100.20/32 Null0 tag 100
+  100.100.100.21/32 Null0 tag 100
+  100.100.100.22/32 Null0 tag 100
+  100.100.100.23/32 Null0 tag 100
+  100.100.100.24/32 Null0 tag 100
+  100.100.100.25/32 Null0 tag 100
+  100.100.100.26/32 Null0 tag 100
+  100.100.100.27/32 Null0 tag 100
+  100.100.100.28/32 Null0 tag 100
+  100.100.100.29/32 Null0 tag 100
+  100.100.100.30/32 Null0 tag 100
+  100.100.100.31/32 Null0 tag 100
+  100.100.100.32/32 Null0 tag 100
+  100.100.100.33/32 Null0 tag 100
+  100.100.100.34/32 Null0 tag 100
+  100.100.100.35/32 Null0 tag 100
+  100.100.100.36/32 Null0 tag 100
+  100.100.100.37/32 Null0 tag 100
+  100.100.100.38/32 Null0 tag 100
+  100.100.100.39/32 Null0 tag 100
+  100.100.100.40/32 Null0 tag 100
+  100.100.100.41/32 Null0 tag 100
+  100.100.100.42/32 Null0 tag 100
+  100.100.100.43/32 Null0 tag 100
+  100.100.100.44/32 Null0 tag 100
+  100.100.100.45/32 Null0 tag 100
+  100.100.100.46/32 Null0 tag 100
+  100.100.100.47/32 Null0 tag 100
+  100.100.100.48/32 Null0 tag 100
+  100.100.100.49/32 Null0 tag 100
+  100.100.100.50/32 Null0 tag 100
+  100.100.100.51/32 Null0 tag 100
+  100.100.100.52/32 Null0 tag 100
+  100.100.100.53/32 Null0 tag 100
+  100.100.100.54/32 Null0 tag 100
+  100.100.100.55/32 Null0 tag 100
+  100.100.100.56/32 Null0 tag 100
+  100.100.100.57/32 Null0 tag 100
+  100.100.100.58/32 Null0 tag 100
+  100.100.100.59/32 Null0 tag 100
+  100.100.100.60/32 Null0 tag 100
+  100.100.100.61/32 Null0 tag 100
+  100.100.100.62/32 Null0 tag 100
+  100.100.100.63/32 Null0 tag 100
+  100.100.100.64/32 Null0 tag 100
+  100.100.100.65/32 Null0 tag 100
+  100.100.100.66/32 Null0 tag 100
+  100.100.100.67/32 Null0 tag 100
+  100.100.100.68/32 Null0 tag 100
+  100.100.100.69/32 Null0 tag 100
+  100.100.100.70/32 Null0 tag 100
+  100.100.100.71/32 Null0 tag 100
+  100.100.100.72/32 Null0 tag 100
+  100.100.100.73/32 Null0 tag 100
+  100.100.100.74/32 Null0 tag 100
+  100.100.100.75/32 Null0 tag 100
+  100.100.100.76/32 Null0 tag 100
+  100.100.100.77/32 Null0 tag 100
+  100.100.100.78/32 Null0 tag 100
+  100.100.100.79/32 Null0 tag 100
+  100.100.100.80/32 Null0 tag 100
+  100.100.100.81/32 Null0 tag 100
+  100.100.100.82/32 Null0 tag 100
+  100.100.100.83/32 Null0 tag 100
+  100.100.100.84/32 Null0 tag 100
+  100.100.100.85/32 Null0 tag 100
+  100.100.100.86/32 Null0 tag 100
+  100.100.100.87/32 Null0 tag 100
+  100.100.100.88/32 Null0 tag 100
+  100.100.100.89/32 Null0 tag 100
+  100.100.100.90/32 Null0 tag 100
+  100.100.100.91/32 Null0 tag 100
+  100.100.100.92/32 Null0 tag 100
+  100.100.100.93/32 Null0 tag 100
+  100.100.100.94/32 Null0 tag 100
+  100.100.100.95/32 Null0 tag 100
+  100.100.100.96/32 Null0 tag 100
+  100.100.100.97/32 Null0 tag 100
+  100.100.100.98/32 Null0 tag 100
+  100.100.100.99/32 Null0 tag 100
+  100.100.100.100/32 Null0 tag 100
+  100.100.100.101/32 Null0 tag 100
+  100.100.100.102/32 Null0 tag 100
+  100.100.100.103/32 Null0 tag 100
+  100.100.100.104/32 Null0 tag 100
+  100.100.100.105/32 Null0 tag 100
+  100.100.100.106/32 Null0 tag 100
+  100.100.100.107/32 Null0 tag 100
+  100.100.100.108/32 Null0 tag 100
+  100.100.100.109/32 Null0 tag 100
+  100.100.100.110/32 Null0 tag 100
+  110.70.16.0/23 Null0 tag 5000
+  110.70.32.0/21 Null0 tag 5000
+  110.70.121.0/24 Null0 tag 5000
+  110.70.128.0/17 Null0 tag 5000 description ##IB-Roming-Core##
+  118.235.0.0/17 Null0 tag 5000
+  118.235.212.0/24 Null0 tag 5000
+  175.218.0.0/16 Null0 tag 5000
+  175.218.0.0/17 Null0 tag 5001
+  175.218.128.0/17 Null0 tag 5001
+  175.218.128.0/19 Null0 tag 3021
+  175.223.50.0/23 Null0 tag 5000
+  175.223.51.0/25 Null0 tag 5000
+  175.254.0.219/32 GigabitEthernet0/0/0/0 10.59.1.1 tag 10000 description Default-Net
+  211.246.102.64/26 Null0 tag 5000
+  223.62.157.10/32 GigabitEthernet0/0/0/2 223.62.157.133 description SKT
+ !
+ address-family ipv6 unicast
+  3::3/128 GigabitEthernet0/0/0/0 2001:e60:e650:5105:10:59:1:1 tag 100
+ !
+!
+router isis 9964
+ is-type level-2-only
+ net 49.5610.1752.5400.0013.00
+ nsf cisco
+ log adjacency changes
+ lsp-gen-interval secondary-wait 100
+ lsp-refresh-interval 2400
+ max-lsp-lifetime 3600
+ address-family ipv4 unicast
+  metric-style wide
+  metric 1000 level 2
+  spf-interval secondary-wait 100
+  maximum-paths 16
+  redistribute static route-policy Static-ISIS
+  maximum-redistributed-prefixes 100
+ !
+ address-family ipv6 unicast
+  metric-style wide
+  metric 1000 level 2
+  spf-interval secondary-wait 100
+  maximum-paths 16
+  maximum-redistributed-prefixes 100
+ !
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/1
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   fast-reroute per-prefix
+   metric 100 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/4
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   fast-reroute per-prefix
+   metric 100 level 2
+  !
+  address-family ipv6 unicast
+   fast-reroute per-prefix
+   metric 100 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/6
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   fast-reroute per-prefix
+   metric 100 level 2
+  !
+  address-family ipv6 unicast
+   fast-reroute per-prefix
+   metric 100 level 2
+  !
+ !
+!
+router bgp 9964
+ nsr
+ bgp router-id 175.254.0.13
+ address-family ipv4 unicast
+  maximum-paths ibgp 2
+  redistribute static route-policy Static-BGP
+ !
+ address-family ipv6 unicast
+  maximum-paths ibgp 2
+  redistribute static route-policy Static-BGP
+ !
+ neighbor-group SK-RX
+  remote-as 18302
+  bfd fast-detect
+  bfd multiplier 4
+  bfd minimum-interval 50
+  ebgp-multihop 2
+  update-source Loopback0
+  address-family ipv4 unicast
+   route-policy SK-Local-In in
+   route-policy KT-Local-Out out
+  !
+ !
+ neighbor-group CS-RRClient
+  remote-as 9964
+  update-source Loopback0
+  address-family ipv4 unicast
+   route-reflector-client
+   next-hop-self
+  !
+ !
+ neighbor-group B2B-CORE-Client
+  remote-as 9964
+  update-source Loopback0
+  address-family ipv4 unicast
+   route-reflector-client
+   next-hop-self
+  !
+ !
+ neighbor-group CS-RRClient-IPv6
+  remote-as 9964
+  update-source Loopback0
+  address-family ipv6 unicast
+   route-reflector-client
+   next-hop-self
+  !
+ !
+ neighbor 175.254.1.127
+  use neighbor-group CS-RRClient
+  description ## W.Busan-CSQ127 ##
+ !
+ neighbor 175.254.1.200
+  use neighbor-group B2B-CORE-Client
+  description ## LAB-B2B-CORE ##
+ !
+ neighbor 223.62.157.10
+  use neighbor-group SK-RX
+  description ## SKT, CNTM-IPB_RX-RT-02, Centum ##
+  address-family ipv4 unicast
+   soft-reconfiguration inbound always
+  !
+ !
+ neighbor 2400:800:500:0:175:254:1:127
+  use neighbor-group CS-RRClient-IPv6
+  description ## W.Busan-CSQ127 ##
+ !
+!
+
+commit
+
+end
+          

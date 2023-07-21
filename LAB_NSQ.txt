@@ -1,0 +1,158 @@
+config terminal
+
+hostname TEST_5G-NAT-UP
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+clock timezone EET 2 0
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!         
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+no ip domain lookup
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!         
+!
+!
+!
+!
+!
+redundancy
+!
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 175.254.1.175 255.255.255.255
+ isis circuit-type level-2-only
+ isis metric 1 level-2
+!
+interface Ethernet0/0
+ no ip address
+ shutdown
+!
+interface Ethernet0/1
+ description ### GWN01 ###
+ ip address 10.59.131.2 255.255.255.252
+ no ip redirects
+ no ip unreachables
+ ipv6 address 2001:E60:E650:5101:10:59:131:2/126
+ no ipv6 redirects
+ no ipv6 unreachables
+ no shutdown
+!
+interface Ethernet0/2
+ description ### GWN02 ###
+ ip address 10.59.132.2 255.255.255.252
+ no ip redirects
+ no ip unreachables
+ ipv6 address 2001:E60:E650:5101:10:59:132:2/126
+ no ipv6 redirects
+ no ipv6 unreachables
+ no shutdown
+!
+interface Ethernet0/3
+ description ## CSQ ##
+ ip address 192.168.31.1 255.255.255.252
+ ip router isis 9964
+ ipv6 address 2001:E60:E650:5105:192:168:31:1/126
+ isis circuit-type level-2-only
+ isis network point-to-point 
+ isis metric 100 level-2
+ no shutdown
+!
+router isis 9964
+ net 49.5610.1752.5400.1175.00
+ is-type level-2-only
+ metric-style wide
+ log-adjacency-changes
+ passive-interface default
+ no passive-interface Ethernet0/3
+ maximum-paths 32
+!
+router isis
+!
+router bgp 9964
+ bgp log-neighbor-changes
+ neighbor 175.254.1.127 remote-as 9964
+ neighbor 175.254.1.127 password new1234!
+ neighbor 175.254.1.127 update-source Loopback0
+ !
+ address-family ipv4
+  redistribute static route-map Static-to-BGP
+  neighbor 175.254.1.127 activate
+ exit-address-family
+!
+ip forward-protocol nd
+!
+ip bgp-community new-format
+!
+no ip http server
+no ip http secure-server
+ip route 118.235.47.0 255.255.255.0 Null0 tag 1008
+!
+!
+route-map Static-to-BGP permit 10
+ match tag 1008
+ set origin igp
+ set community 9964:1008 9964:9611
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end
+
+copy run star
+
