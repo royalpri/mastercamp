@@ -1,4 +1,4 @@
-
+delete interface
 
 set system host-name TEST_CSQ
 set system root-authentication plain-text-password 
@@ -80,7 +80,7 @@ set protocols bgp group MCR-RRServer-IPv6 neighbor 2400:800:500:0:175:254:0:13 d
 set protocols bgp group 5G-NAT-UPSW type internal
 set protocols bgp group 5G-NAT-UPSW local-address 175.254.1.127
 set protocols bgp group 5G-NAT-UPSW family inet unicast
-set protocols bgp group 5G-NAT-UPSW authentication-key "$9$WKSX-woaUm5FUD9A0OREbsYg4a"
+set protocols bgp group 5G-NAT-UPSW authentication-key "new1234!"
 set protocols bgp group 5G-NAT-UPSW export Direct-BGP
 set protocols bgp group 5G-NAT-UPSW export Static-BGP
 set protocols bgp group 5G-NAT-UPSW cluster 175.254.1.127
