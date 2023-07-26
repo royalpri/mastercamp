@@ -1,0 +1,407 @@
+config terminal
+
+
+hostname LAB-MEN128
+clock timezone KST Asia/Seoul
+banner motd x
+==========================================================================
+                              !!!!! WARNING !!!!!                            
+             Only authorized personnel can access this system.
+        The unauthorized access will be subject to a legal penalty.
+                              !!!!! WARNING !!!!!
+==========================================================================
+x
+username kt
+ group root-lr
+ group cisco-support
+ secret 5 $1$mkzz$34GXU.yp/Uj0KROik1Iwu/
+!
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
+!
+ipv4 access-list vty-acl
+ 10 permit ipv4 host 61.74.74.42 any
+ 20 permit ipv4 125.144.32.32 0.0.0.31 any
+ 30 permit ipv4 host 14.63.156.62 any
+ 40 permit ipv4 host 14.63.159.179 any
+ 50 permit ipv4 59.20.200.0 0.0.0.255 any
+ 60 permit ipv4 121.144.55.0 0.0.0.255 any
+ 70 permit ipv4 61.76.233.96 0.0.0.15 any
+ 900 permit ipv4 172.30.240.0/29 any
+ 901 permit ipv4 172.30.241.0/27 any
+ 902 permit ipv4 172.30.244.192/27 any
+ 903 permit ipv4 172.30.245.0/24 any
+ 1000 deny ipv4 any any
+!
+ipv4 access-list snmp-acl
+ 10 permit ipv4 125.144.32.32 0.0.0.31 any
+ 20 permit ipv4 host 210.101.112.246 any
+!
+class-map match-any Class-PQ
+ match precedence 4 5 6 7 
+ end-class-map
+! 
+class-map match-any Class-BRONZE
+ match precedence 2 3 
+ end-class-map
+! 
+policy-map QOS-5G
+ class Class-PQ
+  priority level 1 
+ ! 
+ class Class-BRONZE
+  bandwidth remaining percent 20 
+  queue-limit 1000 ms 
+ ! 
+ class class-default
+  bandwidth remaining percent 80 
+  queue-limit 4000 ms 
+ ! 
+ end-policy-map
+! 
+interface Loopback0
+ description ## Router-ID ##
+ ipv4 address 175.254.0.128 255.255.255.255
+ ipv6 address 2400:800:500:0:175:254:0:128/128
+!
+interface MgmtEth0/RP0/CPU0/0
+ shutdown
+!
+interface GigabitEthernet0/0/0/0
+ description ## TenGigE0/1/0/14-W.Busa-MEN127N, Te0/1/0/14, 02600009-3667, BSKORNET-FO-0020-13,14 ##
+ mtu 4484
+ service-policy output QOS-5G
+ ipv4 address 175.254.24.18 255.255.255.252
+ ipv4 unreachables disable
+ ipv6 address 2400:800:500:0:175:254:24:12/126
+ ipv6 unreachables disable
+ load-interval 30
+ no shutdown
+!
+interface GigabitEthernet0/0/0/1
+ description ## TenGigE0/1/0/16-W.Busan-ESE004, 12019501-0064, (2~4)F023-27,28 ##
+ service-policy output QOS-5G
+ ipv4 address 100.108.23.73 255.255.255.252
+ ipv4 unreachables disable
+ load-interval 30
+ no shutdown
+!
+interface GigabitEthernet0/0/0/2
+ description ## TenGigE0/1/0/0-W.Busan-MCN014, Te0/1/0/16, Direct ##
+ mtu 4484
+ service-policy output QOS-5G
+ ipv4 address 175.254.24.10 255.255.255.252
+ ipv4 unreachables disable
+ ipv6 address 2400:800:500:0:175:254:24:a/126
+ ipv6 unreachables disable
+ load-interval 30
+ no shutdown
+!
+interface GigabitEthernet0/0/0/3
+ description ## TEST-PET02 ge-0/0/3 ##
+ service-policy output QOS-5G
+ ipv4 address 175.254.65.205 255.255.255.252
+ ipv4 unreachables disable
+ lacp period short
+ load-interval 30
+ no shutdown
+!
+prefix-set IP-1588
+  100.111.254.128/28
+end-set
+!
+prefix-set DU-Summary
+  100.108.0.0/14 eq 24,
+  18.104.0.0/13 eq 24
+end-set
+!
+route-policy Conn-BGP
+  if destination in IP-1588 then
+    set community (9964:9611, 9964:1588)
+    set origin igp
+    pass
+  else
+    drop
+  endif
+end-policy
+!
+route-policy Deny-BGP
+  drop
+end-policy
+!
+route-policy OSPF-BGP
+  if tag is 1009 and destination in DU-Summary then
+    set community (9964:9611, 9964:1009)
+    set origin igp
+    set med 0
+  elseif tag is 5500 or tag is 6600 or tag is 1009 then
+    drop  
+  else
+    set community (9964:9611)
+    set origin igp
+  endif
+end-policy
+!
+route-policy Add-Community
+  set community (9964:9611)
+end-policy
+!
+route-policy Deny-BGP-IPv6
+  drop
+end-policy
+!
+route-policy Deny-From-5G-DU
+  if destination in (0.0.0.0/0) then
+    drop
+  else
+    pass
+  endif
+end-policy
+!
+route-policy BGP-Premium-PE-In
+  set local-preference 150
+  set med 0
+  set community (9964:9611)
+end-policy
+!
+route-policy Deny-From-5G-KRMS
+  drop
+end-policy
+!
+route-policy BGP-Premium-PE-Out
+  if community matches-any (9964:5001) then
+    pass
+  elseif community matches-any (9964:3112, 9964:3212) then
+    pass
+  else
+    drop
+  endif
+end-policy
+!
+route-policy BGP-Premium-N.PE-In
+  set local-preference 150
+  set med 0
+  set community (9964:9619)
+end-policy
+!
+route-policy BGP-Premium-W.PE-In
+  set local-preference 150
+  set med 0
+  set community (9964:9611)
+end-policy
+!
+route-policy Deny-From-5G-KRMS-IPv6
+  drop
+end-policy
+!
+router static
+ address-family ipv4 unicast
+  0.0.0.0/0 175.254.0.219
+ !
+ vrf mgmt
+  address-family ipv4 unicast
+   172.30.128.0/17 172.30.210.9
+  !
+ !
+!
+router isis 9964
+ is-type level-2-only
+ net 49.5610.1752.5400.0128.00
+ nsf cisco
+ log adjacency changes
+ lsp-gen-interval secondary-wait 100
+ lsp-refresh-interval 2400
+ max-lsp-lifetime 3600
+ address-family ipv4 unicast
+  metric-style wide
+  metric 1000 level 2
+  spf-interval secondary-wait 100
+  maximum-paths 32
+  redistribute bgp 9964 route-policy Deny-BGP
+  maximum-redistributed-prefixes 100
+ !
+ address-family ipv6 unicast
+  metric-style wide
+  metric 1000 level 2
+  spf-interval secondary-wait 100
+  maximum-paths 32
+  redistribute bgp 9964 route-policy Deny-BGP-IPv6
+  maximum-redistributed-prefixes 100
+ !        
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/0
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   fast-reroute per-prefix
+   metric 20 level 2
+  !
+  address-family ipv6 unicast
+   fast-reroute per-prefix
+   metric 20 level 2
+  !
+ !
+ interface GigabitEthernet0/0/0/2
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  address-family ipv4 unicast
+   fast-reroute per-prefix
+   metric 100 level 2
+  !
+  address-family ipv6 unicast
+   fast-reroute per-prefix
+   metric 100 level 2
+  !
+ !
+!
+router ospf 9964
+ nsr
+ log adjacency changes
+ router-id 175.254.0.128
+ cost 1000
+ distribute-list route-policy Deny-From-5G-DU in
+ timers throttle lsa all 50 100 500
+ timers throttle spf 100 200 5000
+ default-information originate metric-type 1
+ redistribute bgp 9964 route-policy Deny-BGP
+ address-family ipv4 unicast
+ area 0.0.0.0
+  interface GigabitEthernet0/0/0/0
+   cost 30
+   network point-to-point
+  !
+  interface GigabitEthernet0/0/0/1
+   cost 10
+   authentication message-digest
+   message-digest-key 1 md5 encrypted 12363627344629371D
+   network point-to-point
+  !
+  interface GigabitEthernet0/0/0/3
+   cost 10
+   network point-to-point
+  !
+ !
+!
+router bgp 9964
+ nsr
+ bgp router-id 175.254.0.128
+ address-family ipv4 unicast
+  aggregate-address 100.108.18.0/24 summary-only route-policy Add-Community
+  aggregate-address 100.108.23.0/24 summary-only route-policy Add-Community
+  aggregate-address 100.108.208.0/24 summary-only route-policy Add-Community
+  aggregate-address 100.108.213.0/24 summary-only route-policy Add-Community
+  aggregate-address 100.108.218.0/24 summary-only route-policy Add-Community
+  aggregate-address 100.108.223.0/24 summary-only route-policy Add-Community
+  aggregate-address 100.108.247.0/24 summary-only route-policy Add-Community
+  redistribute connected route-policy Conn-BGP
+  redistribute ospf 9964 match internal external route-policy OSPF-BGP
+ !
+ address-family ipv6 unicast
+ !
+ neighbor-group CS-RRClient
+  remote-as 9964
+  update-source Loopback0
+  address-family ipv4 unicast
+   route-reflector-client
+   next-hop-self
+  !
+ !
+ neighbor-group MCR-RRServer
+  remote-as 9964
+  update-source Loopback0
+  address-family ipv4 unicast
+   next-hop-self
+  !       
+ !
+ neighbor-group CS-RRClient-IPv6
+  remote-as 9964
+  update-source Loopback0
+  address-family ipv6 unicast
+   route-reflector-client
+  !
+ !
+ neighbor-group MCR-RRServer-IPv6
+  remote-as 9964
+  update-source Loopback0
+  address-family ipv6 unicast
+  !
+ !
+ neighbor 175.254.0.13
+  use neighbor-group MCR-RRServer
+  description ## W.Busan-MCN013 ##
+ !
+ neighbor 175.254.0.14
+  use neighbor-group MCR-RRServer
+  description ## W.Busan-MCN014 ##
+ !
+ neighbor 175.254.1.201
+  use neighbor-group CS-RRClient
+  description ## Busan-BSN201 ##
+ !
+ neighbor 175.254.1.202
+  use neighbor-group CS-RRClient
+  description ## Busan-BSN202 ##
+ !
+ neighbor 175.254.64.102
+  remote-as 9964
+  description ## 5G-KRMS-IPv4 ##
+  update-source Loopback0
+  address-family ipv4 unicast
+   route-policy Deny-From-5G-KRMS in
+   maximum-prefix 1 100
+   next-hop-self
+  !
+ !
+ neighbor 175.254.65.206
+  remote-as 4766
+  description ## PW.BuSI-PET050 ##
+  address-family ipv4 unicast
+   route-policy BGP-Premium-W.PE-In in
+   route-policy BGP-Premium-PE-Out out
+  !
+ !
+ neighbor 175.254.66.134
+  remote-as 4766
+  description ## PN.Busa-PET008 ##
+  address-family ipv4 unicast
+   route-policy BGP-Premium-N.PE-In in
+   route-policy BGP-Premium-PE-Out out
+  !
+ !
+ neighbor 2400:800:500:0:175:254:0:13
+  use neighbor-group MCR-RRServer-IPv6
+  description ## W.Busan-MCN013 ##
+ !
+ neighbor 2400:800:500:0:175:254:0:14
+  use neighbor-group MCR-RRServer-IPv6
+  description ## W.Busan-MCN014 ##
+ !
+ neighbor 2400:800:500:0:175:254:64:66
+  remote-as 9964
+  description ## 5G-KRMS-IPv6 ##
+  update-source Loopback0
+  address-family ipv6 unicast
+   route-policy Deny-From-5G-KRMS-IPv6 in
+   maximum-prefix 1 100
+   next-hop-self
+  !
+ !
+!
+
+commit
+end
+
+           
