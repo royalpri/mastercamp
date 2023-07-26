@@ -1,0 +1,135 @@
+config terminal
+
+
+hostname LAB-ESE002
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!         
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!         
+redundancy
+!
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ description ## Router-ID ##
+ ip address 100.108.23.6 255.255.255.255
+!
+interface Ethernet0/0
+ description #<W.Busan-ESE004>,<37>,I-link#
+ ip address 100.108.23.82 255.255.255.252
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 OSPF-ESW
+ ip ospf network point-to-point
+ ip ospf cost 20
+ no shutdown
+!
+interface Ethernet0/1
+ description #<>MPE#2_Te_0#
+ ip address 100.108.23.74 255.255.255.252
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 OSPF-ESW
+ ip ospf network point-to-point
+ ip ospf cost 10
+ no shutdown
+!
+interface Ethernet0/2
+ description #<DU#1-1>#
+ ip address 100.108.29.1 255.255.255.248
+ no shutdown
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+router ospf 9964
+ router-id 100.108.23.6
+ timers throttle spf 50 100 5000
+ redistribute connected metric-type 1 subnets route-map Direct-OSPF
+ redistribute static metric-type 1 subnets route-map Static-OSPF
+ network 100.108.23.6 0.0.0.0 area 0
+ network 100.108.23.72 0.0.0.3 area 0
+ network 100.108.23.80 0.0.0.3 area 0
+ network 100.108.23.84 0.0.0.3 area 0
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+ip route 100.108.28.0 255.255.255.0 Null0 tag 1009
+ip route 100.108.29.0 255.255.255.0 Null0 tag 1009
+ip route 100.111.254.0 255.255.255.252 100.108.23.81
+ip route 100.111.254.0 255.255.255.252 100.108.23.85
+ip route 100.111.254.4 255.255.255.252 100.108.23.185
+!
+!
+route-map Direct-OSPF permit 10
+ set metric 1
+ set tag 6600
+!
+route-map Static-OSPF permit 10
+ match tag 1009
+ set metric 20
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+
+
+end
+copy run star
+
+         

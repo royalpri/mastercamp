@@ -1,0 +1,98 @@
+config terminal
+
+hostname LAB_DU01
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!         
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!         
+!
+!
+redundancy
+!
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ no ip address
+ shutdown
+!
+interface Ethernet0/1
+ no ip address
+ shutdown
+!
+interface Ethernet0/2
+ description #<DU_L3_01>#
+ ip address 100.108.28.2 255.255.255.248
+ no shutdown
+!
+interface Ethernet0/3
+ description #<DU_L3_02>#
+ ip address 100.108.29.2 255.255.255.248
+ no shutdown
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+ip route 0.0.0.0 0.0.0.0 Ethernet0/2 100.108.28.1 name Default
+ip route 0.0.0.0 0.0.0.0 Ethernet0/3 100.108.29.1 name Default
+!
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+
+end
+copy run star
+
+      
